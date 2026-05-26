@@ -1,8 +1,8 @@
-extends:
-  - spectral:oas
-
-rules:
-  operation-description: warn
-  operation-operationId: error
-  operation-tags: warn
-  oas3-api-servers: off
+{
+  "name": "your-project-name",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "node server.js",
+    "test": "newman run tests/collection.json"
+  }
+}
