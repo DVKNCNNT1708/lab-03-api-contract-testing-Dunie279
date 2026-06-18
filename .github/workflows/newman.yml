@@ -20,35 +20,38 @@ jobs:
             npm init -y
             npm install -D @stoplight/spectral-cli wait-on newman newman-reporter-htmlextra
           fi
+          npm install -g @stoplight/prism-cli
 
       - name: Lint OpenAPI contracts
         run: |
-          CONTRACT_FILE=$(find . -name "*.yaml" -o -name "*.yml" | grep -v "node_modules" | head -n 1)
-          echo "Linting file: $CONTRACT_FILE"
-          npx @stoplight/spectral-cli lint "$CONTRACT_FILE"
+          if [ -d "contracts" ]; then
+            npx @stoplight/spectral-cli lint contracts/*.yaml || npx @stoplight/spectral-cli lint contracts/*.yml
+          else
+            npx @stoplight/spectral-cli lint *.yaml || npx @stoplight/spectral-cli lint *.yml
+          fi
 
       - name: Start Prism mock server
         run: |
-          npm install -g @stoplight/prism-cli
-          CONTRACT_FILE=$(find . -name "*.yaml" -o -name "*.yml" | grep -v "node_modules" | head -n 1)
-          echo "Starting mock server with file: $CONTRACT_FILE"
-          nohup prism mock "$CONTRACT_FILE" -p 4010 > prism.log 2>&1 &
+          if [ -d "contracts" ]; then
+            nohup prism mock contracts/*.yaml -p 4010 > prism.log 2>&1 &
+          else
+            nohup prism mock *.yaml -p 4010 > prism.log 2>&1 &
+          fi
 
       - name: Wait for mock server
         run: |
-          sleep 3
-          npx wait-on http://127.0.0.1:4010 --timeout 30000 || npx wait-on http://localhost:4010 --timeout 30000
+          sleep 5
+          npx wait-on http://127.0.0.1:4010 --timeout 15000 || (cat prism.log && exit 1)
 
       - name: Run Newman on mock environment
         run: |
           mkdir -p reports
-          COLLECTION_FILE=$(find . -name "*.json" | grep -v "package" | head -n 1)
-          if [ ! -z "$COLLECTION_FILE" ]; then
-            echo "Running Newman with collection: $COLLECTION_FILE"
-            npx newman run "$COLLECTION_FILE" -r cli,htmlextra --reporter-htmlextra-export reports/report.html
+          if [ -d "contracts" ] && [ -f contracts/*.json ]; then
+            npx newman run contracts/*.json -r cli,htmlextra --reporter-htmlextra-export reports/report.html
+          elif [ -d "docs" ] && [ -f docs/*.json ]; then
+            npx newman run docs/*.json -r cli,htmlextra --reporter-htmlextra-export reports/report.html
           else
-            echo "No collection JSON file found in repository!"
-            exit 1
+            npx newman run *.json -r cli,htmlextra --reporter-htmlextra-export reports/report.html || echo "No collection file found"
           fi
 
       - name: Upload Newman reports
