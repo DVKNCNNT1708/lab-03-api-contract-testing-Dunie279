@@ -1,17 +1,1 @@
-{
-  "name": "lab-03-api-contract-testing",
-  "version": "1.0.0",
-  "scripts": {
-    "start": "node server.js",
-    "test": "newman run tests/collection.json",
-    "mock:iot": "prism mock contracts/*.yaml -p 4010",
-    "test:mock": "newman run docs/*.json -r cli,htmlextra --reporter-htmlextra-export reports/report.html"
-  },
-  "devDependencies": {
-    "@stoplight/prism-cli": "^5.0.0",
-    "@stoplight/spectral-cli": "^6.11.0",
-    "newman": "^6.1.1",
-    "newman-reporter-htmlextra": "^1.23.0",
-    "wait-on": "^7.2.0"
-  }
-}
+extends: [[spectral:oas, recommended]]
