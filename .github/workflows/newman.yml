@@ -31,8 +31,8 @@ jobs:
 
       - name: Wait for mock server
         run: |
-          sleep 5
-          npx wait-on http://127.0.0.1:4010 --timeout 15000 || (cat prism.log && exit 1)
+          sleep 3
+          npx wait-on http://127.0.0.1:4010/health --timeout 30000 || npx wait-on http://localhost:4010/health --timeout 30000 || (cat prism.log && exit 1)
 
       - name: Run Newman on mock environment
         run: |
