@@ -11,7 +11,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-          # Đã bỏ dòng check cache npm để không bị lỗi lockfile
 
       - name: Install dependencies
         run: |
@@ -23,24 +22,33 @@ jobs:
           fi
 
       - name: Lint OpenAPI contracts
-        run: npx @stoplight/spectral-cli lint contracts/*.yaml
+        run: |
+          CONTRACT_FILE=$(find . -name "*.yaml" -o -name "*.yml" | grep -v "node_modules" | head -n 1)
+          echo "Linting file: $CONTRACT_FILE"
+          npx @stoplight/spectral-cli lint "$CONTRACT_FILE"
 
       - name: Start Prism mock server
         run: |
           npm install -g @stoplight/prism-cli
-          nohup prism mock contracts/*.yaml -p 4010 > prism.log 2>&1 &
+          CONTRACT_FILE=$(find . -name "*.yaml" -o -name "*.yml" | grep -v "node_modules" | head -n 1)
+          echo "Starting mock server with file: $CONTRACT_FILE"
+          nohup prism mock "$CONTRACT_FILE" -p 4010 > prism.log 2>&1 &
 
       - name: Wait for mock server
-        run: npx wait-on http://localhost:4010/health --timeout 30000 || npx wait-on http://localhost:4010/ --timeout 30000
+        run: |
+          sleep 3
+          npx wait-on http://127.0.0.1:4010 --timeout 30000 || npx wait-on http://localhost:4010 --timeout 30000
 
       - name: Run Newman on mock environment
         run: |
           mkdir -p reports
-          if [ -f contracts/*.json ]; then
-            npx newman run contracts/*.json -r cli,htmlextra --reporter-htmlextra-export reports/report.html
+          COLLECTION_FILE=$(find . -name "*.json" | grep -v "package" | head -n 1)
+          if [ ! -z "$COLLECTION_FILE" ]; then
+            echo "Running Newman with collection: $COLLECTION_FILE"
+            npx newman run "$COLLECTION_FILE" -r cli,htmlextra --reporter-htmlextra-export reports/report.html
           else
-            echo "No collection found, checking workflows..."
-            npx newman run docs/*.json -r cli,htmlextra --reporter-htmlextra-export reports/report.html || true
+            echo "No collection JSON file found in repository!"
+            exit 1
           fi
 
       - name: Upload Newman reports
