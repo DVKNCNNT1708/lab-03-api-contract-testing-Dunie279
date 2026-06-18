@@ -23,20 +23,11 @@ jobs:
           npm install -g @stoplight/prism-cli
 
       - name: Lint OpenAPI contracts
-        run: |
-          if [ -d "contracts" ]; then
-            npx @stoplight/spectral-cli lint contracts/*.yaml || npx @stoplight/spectral-cli lint contracts/*.yml
-          else
-            npx @stoplight/spectral-cli lint *.yaml || npx @stoplight/spectral-cli lint *.yml
-          fi
+        run: npx @stoplight/spectral-cli lint contracts/iot-ingestion.openapi.yaml
 
       - name: Start Prism mock server
         run: |
-          if [ -d "contracts" ]; then
-            nohup prism mock contracts/*.yaml -p 4010 > prism.log 2>&1 &
-          else
-            nohup prism mock *.yaml -p 4010 > prism.log 2>&1 &
-          fi
+          nohup prism mock contracts/iot-ingestion.openapi.yaml -p 4010 > prism.log 2>&1 &
 
       - name: Wait for mock server
         run: |
